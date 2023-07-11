@@ -20,8 +20,8 @@ exports.createThing = (req, res, next) => {
     console.log(book)
     
     book.save()
-    .then(() => {res.status(201).json({message: 'Objet enregistré !!'})})
-    .catch(error => {res.status(400).json( {error })});
+    .then(() => {res.status(201).json({message: 'Le livre a bien été enregistré !!'})})
+    .catch(error => {res.status(400).json( {message: 'Le livre n\'a pas pu être enregistré' })});
 
 
 };
@@ -89,45 +89,41 @@ exports.getStuffById = (req, res, next) => {
 
 exports.createRating = (req, res, next) => {
     
-    
-    
     Book.findOne({ _id: req.params.id })
         .then((book) => {
         if (book.userId === req.auth.userId) {
-            /*res.status(401).json({message: 'Not authorized'});*/
+
             console.log('pas le droit car c\'est ton livre');
-        } else {
-            console.log(book.ratings)   
-            console.log(req.body)
-            /*book.ratings.push({ userId: userId, grade: rating })*/
-            /*console.log(book.ratings)*/
+        } else {  
+            let newRating = {
+                userId: req.body.userId,
+                grade: req.body.rating
+            };
+             const newArrayRating = book.ratings 
+            newArrayRating.push(newRating) 
+            const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
+            const averageRating = totalRatings / book.ratings.length;
+            book.averageRating = averageRating;
+            book.save()
+            .then(() => {res.status(201).json({message: 'Vote enregistré !!'})})
+            .catch(error => {res.status(400).json( {error })});
+            console.log(book)
+
         }})
+    }
+
     
+
+        exports.getBestRatingBooks = (req, res, next) => {
+            Book.find()
+              .sort({averageRating: -1})
+              .limit(3)
+              .then(bestRatedBook => res.status(200).json(bestRatedBook))
+              .catch(error => res.status(400).json({error}))
+        }
+
     
-}
 
-    /*const id  = req.params.id
-    console.log(id)
-    const livres = Book.find()
-    console.log(livres)*/
-        
-        /*if (thing.userId != req.auth.userId) {
-            res.status(401).json({message: 'Not authorized'});
-        } else {
-            console.log(' tout bon !!')
-        }}*/
-
-
-
-    /*Book.findOne({ _id: req.params.id })
-    .then((book) => {
-      const existingRating = book.ratings.find((r) => r.userId === req.auth.userId);
-      if (existingRating) {
-        return res
-          .status(400)
-          .json({ message: "User has already rated this book." });
-      } else {
-        book.ratings.push({ userId: userId, grade: rating });*/
         
        
  
