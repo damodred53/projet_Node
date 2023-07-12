@@ -1,58 +1,48 @@
 const Book = require('../models/Book')
 const fs = require('fs');
-const sharp = require('sharp');
-const storage = require('multer');
 
 
-exports.createThing = (req, res, next) => {
+exports.createBook = (req, res, next) => {
     
     const bookObject = JSON.parse(req.body.book);
     delete bookObject._id;
     delete bookObject._userId;
-    
-    
-            const book = new Book({
-                ...bookObject,
-                userId: req.auth.userId,
-                imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-                
-            });
-    console.log(book)
-    
-    book.save()
-    .then(() => {res.status(201).json({message: 'Le livre a bien été enregistré !!'})})
-    .catch(error => {res.status(400).json( {message: 'Le livre n\'a pas pu être enregistré' })});
-
+        const book = new Book({
+            ...bookObject,
+            userId: req.auth.userId,
+            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`  
+        });
+        book.save()
+        .then(() => {res.status(201).json({message: 'Le livre a bien été enregistré !!'})})
+        .catch(error => {res.status(400).json( {message: 'Le livre n\'a pas pu être enregistré' })});
 
 };
 
-  exports.modifyThing = (req, res, next) => {
+  exports.modifyBook = (req, res, next) => {
     const bookObject = req.file ? {
         
         ...JSON.parse(req.body.book),
-        
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-    } : { ...req.body };
-    delete bookObject._userId;
-    Book.findOne({_id: req.params.id})
-        .then((thing) => {
-            if (thing.userId != req.auth.userId) {
-                res.status(401).json({ message : 'Not authorized'});
-            } else {
-                Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-                .then(() => res.status(200).json({message : 'Objet modifié!'}))
-                .catch(error => res.status(401).json({ error }));
-               
-            }
-        })
-        .catch((error) => {
-            res.status(400).json({ error });
-        });
+        } : { ...req.body };
+
+        delete bookObject._userId;
+
+        Book.findOne({_id: req.params.id})
+            .then((thing) => {
+                if (thing.userId != req.auth.userId) {
+                    res.status(401).json({ message : 'Not authorized'});
+                } else {
+                    Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
+                    .then(() => res.status(200).json({message : 'Objet modifié!'}))
+                    .catch(error => res.status(401).json({ Message: 'Le livre n\'a pas pu être modifié' }));
+                }
+            })
+            .catch((error) => {
+                res.status(400).json({ error });
+            });
  };
 
-
-
-  exports.deleteThing = (req, res, next) => {
+  exports.deleteBook = (req, res, next) => {
     
     Book.findOne({ _id: req.params.id})
         .then(thing => {
@@ -62,8 +52,8 @@ exports.createThing = (req, res, next) => {
                 const filename = thing.imageUrl.split('/images/')[1];
                 fs.unlink(`images/${filename}`, () => {
                     Book.deleteOne({_id: req.params.id})
-                        .then(() => { res.status(200).json({message: 'Objet supprimé !'})})
-                        .catch(error => res.status(401).json({ error }));
+                        .then(() => { res.status(200).json({message: 'Livre supprimé !'})})
+                        .catch(error => res.status(401).json({ message: 'Le livre n\'a pas pu être supprimé' }));
                 });
             }
         })
@@ -72,7 +62,7 @@ exports.createThing = (req, res, next) => {
         });
  };
 
-exports.getAllThing = (req,res,next) => {
+exports.getAllBooks = (req,res,next) => {
     
     Book.find()
     .then(things => res.status(200).json(things))
@@ -80,7 +70,7 @@ exports.getAllThing = (req,res,next) => {
 
 }
 
-exports.getStuffById = (req, res, next) => {
+exports.getBookById = (req, res, next) => {
     
     Book.findOne({_id: req.params.id })
     .then(thing => res.status(200).json(thing))
@@ -92,28 +82,29 @@ exports.createRating = (req, res, next) => {
     Book.findOne({ _id: req.params.id })
         .then((book) => {
         if (book.userId === req.auth.userId) {
-
-            console.log('pas le droit car c\'est ton livre');
+            res.status(200).json('Vous ne pouvez pas voter pour vote livre');
         } else {  
             let newRating = {
                 userId: req.body.userId,
                 grade: req.body.rating
             };
-             const newArrayRating = book.ratings 
-            newArrayRating.push(newRating) 
-            const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
-            const averageRating = totalRatings / book.ratings.length;
-            book.averageRating = averageRating;
-            book.save()
-            .then(() => {res.status(201).json({message: 'Vote enregistré !!'})})
-            .catch(error => {res.status(400).json( {error })});
-            console.log(book)
+        const newArrayRating = book.ratings 
+        newArrayRating.push(newRating) 
+        const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
 
+        const averageRating = totalRatings / book.ratings.length;
+
+        let valeur = averageRating;
+        let decimales = 1;
+        let valeurArrondie = parseFloat(valeur.toFixed(decimales));
+
+        book.averageRating = valeurArrondie;
+        book.save()
+        next();
+        
         }})
     }
-
     
-
         exports.getBestRatingBooks = (req, res, next) => {
             Book.find()
               .sort({averageRating: -1})
