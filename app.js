@@ -8,7 +8,7 @@ const path = require('path');
 
 const app = express();
 
-mongoose.connect(`mongodb+srv://Florent:Damodred536753@cluster0.32smot5.mongodb.net/`,
+mongoose.connect(`mongodb+srv://${process.env.DB_UTILISATEUR}:${process.env.DB_PASSWORD}@cluster0.32smot5.mongodb.net/`,
   { useNewUrlParser: true,
     useUnifiedTopology: true })
   .then(() => console.log('Connexion à MongoDB réussie !'))
