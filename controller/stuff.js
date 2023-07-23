@@ -30,15 +30,15 @@ exports.createBook = (req, res, next) => {
         Book.findOne({_id: req.params.id})
             .then((thing) => {
                 if (thing.userId != req.auth.userId) {
-                    res.status(401).json({ message : 'Not authorized'});
+                    res.status(403).json({ message : 'Not authorized'});
                 } else {
                     Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
                     .then(() => res.status(200).json({message : 'Objet modifié!'}))
-                    .catch(error => res.status(401).json({ Message: 'Le livre n\'a pas pu être modifié' }));
+                    .catch(error => res.status(400).json({ Message: 'Le livre n\'a pas pu être modifié' }));
                 }
             })
             .catch((error) => {
-                res.status(400).json({ error });
+                res.status(500).json({ error });
             });
  };
 
@@ -47,13 +47,13 @@ exports.createBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id})
         .then(thing => {
             if (thing.userId != req.auth.userId) {
-                res.status(401).json({message: 'Not authorized'});
+                res.status(403).json({message: 'Not authorized'});
             } else {
                 const filename = thing.imageUrl.split('/images/')[1];
                 fs.unlink(`images/${filename}`, () => {
                     Book.deleteOne({_id: req.params.id})
                         .then(() => { res.status(200).json({message: 'Livre supprimé !'})})
-                        .catch(error => res.status(401).json({ message: 'Le livre n\'a pas pu être supprimé' }));
+                        .catch(error => res.status(400).json({ message: 'Le livre n\'a pas pu être supprimé' }));
                 });
             }
         })
